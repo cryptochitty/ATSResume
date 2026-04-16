@@ -1,16 +1,16 @@
 import React from 'react';
-import { ResumeData, db, OperationType, handleFirestoreError } from '@/lib/firebase';
+import { ResumeData, db, OperationType, handleFirestoreError } from '../lib/firebase';
 import { doc, updateDoc, Timestamp } from 'firebase/firestore';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Textarea } from '@/components/ui/textarea';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from './ui/input.tsx';
+import { Label } from './ui/label.tsx';
+import { Textarea } from './ui/textarea.tsx';
+import { Button } from './ui/button.tsx';
+import { Card, CardContent } from './ui/card.tsx';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs.tsx';
 import { Plus, Trash2, Sparkles, Loader2, Github, Linkedin, Import } from 'lucide-react';
-import { rewriteExperience, generateSummary, parseProfileData } from '@/services/geminiService';
+import { rewriteExperience, generateSummary, parseProfileData } from '../services/geminiService';
 import { toast } from 'sonner';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './ui/dialog.tsx';
 
 interface ResumeFormProps {
   resume: ResumeData;

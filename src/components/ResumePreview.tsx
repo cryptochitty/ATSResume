@@ -1,5 +1,5 @@
 import React from 'react';
-import { ResumeData } from '@/lib/firebase';
+import { ResumeData } from '../lib/firebase';
 import ReactMarkdown from 'react-markdown';
 import { Linkedin, Github } from 'lucide-react';
 
