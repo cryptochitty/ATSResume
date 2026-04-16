@@ -2,17 +2,17 @@ import React, { useState, useEffect } from 'react';
 import { auth, signInWithGoogle, logout, db, ResumeData, OperationType, handleFirestoreError } from './lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { collection, query, where, onSnapshot, doc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
-import { Button } from './components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from './components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './components/ui/tabs';
-import { ScrollArea } from './components/ui/scroll-area';
-import { Toaster } from './components/ui/sonner';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { ScrollArea } from '@/components/ui/scroll-area';
+import { Toaster } from '@/components/ui/sonner';
 import { toast } from 'sonner';
 import { FileText, Plus, LogOut, User as UserIcon, Sparkles, Download, Layout, CreditCard, Github, Linkedin, Globe, Phone, Mail, MapPin, Lock, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
-import ResumeForm from './components/ResumeForm';
-import ResumePreview from './components/ResumePreview';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from './components/ui/dialog';
+import ResumeForm from '@/components/ResumeForm';
+import ResumePreview from '@/components/ResumePreview';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 
 export default function App() {
   const [user, setUser] = useState<User | null>(null);
