@@ -26,10 +26,10 @@ jobs:
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: Set up JDK 17
+      - name: Set up JDK 21
         uses: actions/setup-java@v4
         with:
-          java-version: '17'
+          java-version: '21'
           distribution: 'zulu'
 
       - name: Sync Capacitor Android
@@ -80,4 +80,4 @@ jobs:
       - name: Build iOS App
         run: |
           cd ios/App
-          xcodebuild -scheme App -destination 'generic/platform=iOS' -archivePath App.xcarchive archive
+          xcodebuild build -scheme App -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
