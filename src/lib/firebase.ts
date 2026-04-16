@@ -1,17 +1,58 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, GoogleAuthProvider, signInWithPopup, signOut } from 'firebase/auth';
-import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy, Timestamp } from 'firebase/firestore';
+import { 
+  getAuth, 
+  GoogleAuthProvider, 
+  signInWithRedirect, 
+  getRedirectResult, 
+  signOut,
+  User
+} from 'firebase/auth';
+import { 
+  getFirestore, 
+  collection, 
+  doc, 
+  setDoc, 
+  getDoc, 
+  updateDoc, 
+  deleteDoc, 
+  onSnapshot, 
+  query, 
+  where, 
+  orderBy, 
+  Timestamp 
+} from 'firebase/firestore';
 import firebaseConfig from '@/../firebase-applet-config.json';
 
+// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
 export const googleProvider = new GoogleAuthProvider();
 
-export const signInWithGoogle = () => signInWithPopup(auth, googleProvider);
+/**
+ * AUTHENTICATION LOGIC
+ * Changed to Redirect for Capacitor/Mobile compatibility
+ */
+export const signInWithGoogle = () => signInWithRedirect(auth, googleProvider);
+
 export const logout = () => signOut(auth);
 
-// Types for Resume
+/**
+ * Helper to catch the user after the redirect return
+ * Call this in your App.tsx useEffect
+ */
+export const getAuthResult = async (): Promise<User | null> => {
+  try {
+    const result = await getRedirectResult(auth);
+    return result ? result.user : null;
+  } catch (error) {
+    console.error("Auth Redirect Error:", error);
+    return null;
+  }
+};
+
+// --- TYPES & INTERFACES ---
+
 export interface ResumeData {
   id?: string;
   userId: string;
@@ -83,6 +124,9 @@ export interface FirestoreErrorInfo {
   }
 }
 
+/**
+ * ERROR HANDLING
+ */
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),
