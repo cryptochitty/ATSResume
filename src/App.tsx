@@ -1,3 +1,4 @@
+// Build version: 1.0.1 - Fixed Firebase provisioning
 import React, { useState, useEffect } from 'react';
 import { auth, signInWithGoogle, logout, db, ResumeData, OperationType, handleFirestoreError } from './lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
