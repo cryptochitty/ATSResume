@@ -44,7 +44,7 @@ jobs:
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew signingReport | grep -A 3 "Variant: debug"
+          ./gradlew signingReport 
       # ------------------------------------------
 
       - name: Build Android APK
