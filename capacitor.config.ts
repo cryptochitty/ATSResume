@@ -5,7 +5,9 @@ const config: CapacitorConfig = {
   appName: 'ResumeAI',
   webDir: 'dist',
   server: {
-    androidScheme: 'https'
+    // Change https to http for better localhost compatibility in debug
+    androidScheme: 'http',
+    hostname: 'localhost' 
   }
 };
 
