@@ -39,19 +39,17 @@ jobs:
           fi
           npx cap sync android
 
-      # --- ADDED THIS STEP TO FIX YOUR ERROR ---
-      - name: Extract Android SHA1
-        run: |
-          cd android
-          chmod +x gradlew
-          ./gradlew signingReport 
-      # ------------------------------------------
-
       - name: Build Android APK
         run: |
           cd android
           chmod +x gradlew
           ./gradlew assembleDebug
+
+      # This step must come AFTER the build to find the generated keystore
+      - name: Extract Android SHA1
+        run: |
+          cd android
+          ./gradlew signingReport
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -63,5 +61,30 @@ jobs:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v4
-      # ... (rest of your iOS steps remain the same)
-      
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build Web App
+        run: npm run build
+        env:
+          GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
+
+      - name: Sync Capacitor iOS
+        run: |
+          if [ ! -d "ios" ]; then
+            npx cap add ios
+          fi
+          npx cap sync ios
+
+      - name: Build iOS App
+        run: |
+          cd ios/App
+          xcodebuild build -scheme App -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
+          
