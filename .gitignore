@@ -6,3 +6,8 @@ coverage/
 *.log
 .env*
 !.env.example
+
+# Mobile
+android/
+ios/
+capacitor.config.ts

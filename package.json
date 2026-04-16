@@ -6,12 +6,19 @@
   "scripts": {
     "dev": "tsx server.ts",
     "build": "vite build",
+    "mobile:build": "npm run build && npx cap copy",
+    "mobile:open:android": "npx cap open android",
+    "mobile:open:ios": "npx cap open ios",
     "preview": "vite preview",
     "clean": "rm -rf dist",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
     "@base-ui/react": "^1.4.0",
+    "@capacitor/android": "^8.3.0",
+    "@capacitor/cli": "^8.3.0",
+    "@capacitor/core": "^8.3.0",
+    "@capacitor/ios": "^8.3.0",
     "@fontsource-variable/geist": "^5.2.8",
     "@google/genai": "^1.50.1",
     "@hookform/resolvers": "^5.2.2",

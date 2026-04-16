@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: resume-ai
+    runtime: node
+    plan: starter # Change to 'free' if you want the free tier
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: GEMINI_API_KEY
+        sync: false # Set this in the Render Dashboard for security
+      - key: APP_URL
+        fromContext: host
+      
+      # Firebase Configuration
+      # You can paste the contents of firebase-applet-config.json as a single string
+      # or define individual keys
+      - key: FIREBASE_CONFIG
+        sync: false
+
+      # Mobile Payment Verification (Google Play / Apple App Store)
+      # These would be used by your server.ts to verify receipts
+      - key: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON
+        sync: false
+      - key: APPLE_SHARED_SECRET
+        sync: false
+
+      # Port is automatically handled by Render, but our server.ts 
+      # is hardcoded to 3000. Render will map its dynamic port to 3000.
