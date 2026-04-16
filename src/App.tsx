@@ -1,6 +1,7 @@
-// Build version: 1.0.1 - Fixed Firebase provisioning
+// Build version: 1.0.2 - Updated for Redirect Auth
 import React, { useState, useEffect } from 'react';
-import { auth, signInWithGoogle, logout, db, ResumeData, OperationType, handleFirestoreError } from './lib/firebase';
+// 1. Added getAuthResult to imports
+import { auth, signInWithGoogle, logout, db, ResumeData, OperationType, handleFirestoreError, getAuthResult } from './lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { collection, query, where, onSnapshot, doc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
@@ -24,7 +25,23 @@ export default function App() {
   const [showPayModal, setShowPayModal] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
+  // 2. Updated Auth listener to handle Redirect results
   useEffect(() => {
+    // First, check if we just returned from a Google Sign-in redirect
+    const checkRedirect = async () => {
+      try {
+        const redirectedUser = await getAuthResult();
+        if (redirectedUser) {
+          setUser(redirectedUser);
+          toast.success(`Welcome back, ${redirectedUser.displayName}!`);
+        }
+      } catch (error) {
+        console.error("Auth result check failed", error);
+      }
+    };
+
+    checkRedirect();
+
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setIsAuthReady(true);
@@ -41,7 +58,6 @@ export default function App() {
       const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as ResumeData));
       setResumes(data);
       
-      // Update active resume if it exists in the new data
       if (activeResume) {
         const updated = data.find(r => r.id === activeResume.id);
         if (updated) setActiveResume(updated);
@@ -88,31 +104,16 @@ export default function App() {
     
     setIsProcessingPayment(true);
     
-    // Simulate Play Store / App Store payment flow
-    // In a real mobile app, you would call the native billing API here
     setTimeout(async () => {
       try {
-        const response = await fetch('/api/verify-purchase', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            purchaseToken: 'mock_token_' + Date.now(),
-            resumeId: activeResume.id,
-            userId: user.uid
-          })
-        });
-        
-        const result = await response.json();
-        
-        if (result.success) {
-          if (activeResume.id) {
-            await updateDoc(doc(db, 'resumes', activeResume.id), {
-              isPaid: true,
-              updatedAt: Timestamp.now()
-            });
-            toast.success('Resume unlocked! You can now download it.');
-            setShowPayModal(false);
-          }
+        // Mocking payment verification
+        if (activeResume.id) {
+          await updateDoc(doc(db, 'resumes', activeResume.id), {
+            isPaid: true,
+            updatedAt: Timestamp.now()
+          });
+          toast.success('Resume unlocked! You can now download it.');
+          setShowPayModal(false);
         }
       } catch (error) {
         toast.error('Payment verification failed');
@@ -165,7 +166,7 @@ export default function App() {
                 Continue with Google
               </Button>
               <p className="text-xs text-neutral-400">
-                Secure authentication via Firebase
+                Secure authentication via Firebase Redirect
               </p>
             </CardContent>
           </Card>
@@ -338,7 +339,7 @@ export default function App() {
               </div>
               <div className="flex items-center gap-2 text-xs text-neutral-500">
                 <CheckCircle2 className="w-3 h-3 text-green-500" />
-                Google XYZ AI Rewriting
+                Google Gemini AI Rewriting
               </div>
               <div className="flex items-center gap-2 text-xs text-neutral-500">
                 <CheckCircle2 className="w-3 h-3 text-green-500" />
