@@ -1,8 +1,10 @@
 import { initializeApp } from 'firebase/app';
 import {
-  getAuth,
+  initializeAuth,
+  browserLocalPersistence,
+  browserPopupRedirectResolver,
   GoogleAuthProvider,
-  signInWithCredential,
+  signInWithPopup,
   signOut,
   User
 } from 'firebase/auth';
@@ -20,31 +22,28 @@ import {
   orderBy,
   Timestamp
 } from 'firebase/firestore';
-import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import firebaseConfig from '@/../firebase-applet-config.json';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
-export const auth = getAuth(app);
 
-// Initialize Google Auth plugin
-GoogleAuth.initialize({
-  clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '128002101105-19uiapd6ljgp3qi6uilmqdto716o9gae.apps.googleusercontent.com',
-  scopes: ['profile', 'email'],
-  grantOfflineAccess: true,
+// Use initializeAuth with explicit persistence — required for Capacitor WebView
+export const auth = initializeAuth(app, {
+  persistence: browserLocalPersistence,
+  popupRedirectResolver: browserPopupRedirectResolver,
 });
 
+const googleProvider = new GoogleAuthProvider();
+googleProvider.addScope('profile');
+googleProvider.addScope('email');
+
 /**
- * Google Sign-in via Capacitor plugin — works on Android, iOS and web
+ * Google Sign-in via popup — works in Capacitor WebView (opens Chrome Custom Tab)
  */
 export const signInWithGoogle = async (): Promise<User | null> => {
   try {
-    const googleUser = await GoogleAuth.signIn();
-    const credential = GoogleAuthProvider.credential(
-      googleUser.authentication.idToken
-    );
-    const result = await signInWithCredential(auth, credential);
+    const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
     return result.user;
   } catch (error) {
     console.error('Google Sign-in Error:', error);
@@ -52,12 +51,8 @@ export const signInWithGoogle = async (): Promise<User | null> => {
   }
 };
 
-export const logout = async () => {
-  await GoogleAuth.signOut();
-  return signOut(auth);
-};
+export const logout = () => signOut(auth);
 
-// Keep for backward compatibility — no longer needed with plugin approach
 export const getAuthResult = async (): Promise<User | null> => null;
 
 // --- TYPES & INTERFACES ---
