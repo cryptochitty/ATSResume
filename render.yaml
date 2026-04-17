@@ -8,8 +8,13 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
+      # AI providers — fallback chain: Gemini → Groq → OpenRouter (all free tiers)
       - key: GEMINI_API_KEY
-        sync: false # Set this in the Render Dashboard for security
+        sync: false # https://aistudio.google.com/app/apikey
+      - key: GROQ_API_KEY
+        sync: false # https://console.groq.com/keys
+      - key: OPENROUTER_API_KEY
+        sync: false # https://openrouter.ai/settings/keys
       - key: APP_URL
         fromContext: host
       

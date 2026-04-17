@@ -1,3 +1,4 @@
+/// <reference types="vite/client" />
 import { Type } from "@google/genai";
 
 const API_URL = import.meta.env.VITE_API_URL || "https://resume-ai.onrender.com";
