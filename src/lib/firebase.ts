@@ -30,7 +30,7 @@ export const auth = getAuth(app);
 
 // Initialize Google Auth plugin
 GoogleAuth.initialize({
-  clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+  clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID || '128002101105-19uiapd6ljgp3qi6uilmqdto716o9gae.apps.googleusercontent.com',
   scopes: ['profile', 'email'],
   grantOfflineAccess: true,
 });
