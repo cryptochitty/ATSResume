@@ -1,62 +1,43 @@
 import { initializeApp } from 'firebase/app';
-import {
-  initializeAuth,
-  browserLocalPersistence,
-  browserPopupRedirectResolver,
-  GoogleAuthProvider,
-  signInWithPopup,
-  signOut,
-  User
-} from 'firebase/auth';
-import {
-  getFirestore,
-  collection,
-  doc,
-  setDoc,
-  getDoc,
-  updateDoc,
-  deleteDoc,
-  onSnapshot,
-  query,
-  where,
-  orderBy,
-  Timestamp
-} from 'firebase/firestore';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signInWithRedirect, getRedirectResult, signOut } from 'firebase/auth';
+import { getFirestore, collection, doc, setDoc, getDoc, updateDoc, deleteDoc, onSnapshot, query, where, orderBy, Timestamp } from 'firebase/firestore';
 import firebaseConfig from '@/../firebase-applet-config.json';
 
-// Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
+export const auth = getAuth(app);
+export const googleProvider = new GoogleAuthProvider();
 
-// Use initializeAuth with explicit persistence — required for Capacitor WebView
-export const auth = initializeAuth(app, {
-  persistence: browserLocalPersistence,
-  popupRedirectResolver: browserPopupRedirectResolver,
-});
-
-const googleProvider = new GoogleAuthProvider();
-googleProvider.addScope('profile');
-googleProvider.addScope('email');
-
-/**
- * Google Sign-in via popup — works in Capacitor WebView (opens Chrome Custom Tab)
- */
-export const signInWithGoogle = async (): Promise<User | null> => {
+export const signInWithGoogle = async () => {
   try {
-    const result = await signInWithPopup(auth, googleProvider, browserPopupRedirectResolver);
-    return result.user;
+    // On mobile webviews (APKs), popups are often blocked or fail.
+    // Redirect is generally more stable for Capacitor apps.
+    if (window.location.hostname === 'localhost' || window.location.protocol === 'file:') {
+      await signInWithRedirect(auth, googleProvider);
+      return;
+    }
+    const result = await signInWithPopup(auth, googleProvider);
+    return result;
   } catch (error) {
-    console.error('Google Sign-in Error:', error);
-    return null;
+    console.error('Sign-in Error Detail:', error);
+    if (error && typeof error === 'object' && 'code' in error) {
+      const authError = error as { code: string; message: string };
+      if (authError.code === 'auth/unauthorized-domain') {
+        alert('Domain Not Authorized: Please add "http://localhost" and "https://localhost" to your Firebase Console > Authentication > Settings > Authorized Domains.');
+      } else if (authError.code === 'auth/internal-error') {
+        alert('Internal Auth Error: This often happens in APKs if the SHA-1 fingerprint is not added to Firebase Console.');
+      } else {
+        alert(`Login Error (${authError.code}): ${authError.message}`);
+      }
+    }
+    throw error;
   }
 };
 
+export const getAuthResult = () => getRedirectResult(auth);
 export const logout = () => signOut(auth);
 
-export const getAuthResult = async (): Promise<User | null> => null;
-
-// --- TYPES & INTERFACES ---
-
+// Types for Resume
 export interface ResumeData {
   id?: string;
   userId: string;
@@ -128,9 +109,6 @@ export interface FirestoreErrorInfo {
   }
 }
 
-/**
- * ERROR HANDLING
- */
 export function handleFirestoreError(error: unknown, operationType: OperationType, path: string | null) {
   const errInfo: FirestoreErrorInfo = {
     error: error instanceof Error ? error.message : String(error),

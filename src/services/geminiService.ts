@@ -1,43 +1,61 @@
-/// <reference types="vite/client" />
-import { Type } from "@google/genai";
+import { GoogleGenAI, Type } from "@google/genai";
 
-const WORKER_URL = import.meta.env.VITE_WORKER_URL || "https://resumeai-worker.resumeai.workers.dev";
+const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
 
-async function generate(
-  prompt: string,
-  config?: unknown,
-  systemInstruction?: string
-): Promise<string> {
-  const resp = await fetch(`${WORKER_URL}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, config, systemInstruction }),
-  });
-  if (!resp.ok) throw new Error(`Worker error: ${resp.status}`);
-  const data = await resp.json() as { text: string };
-  return data.text;
+// List of free models to try in order of preference
+const MODELS = [
+  "gemini-2.0-flash",
+  "gemini-2.0-flash-lite-preview",
+  "gemini-1.5-flash",
+  "gemini-1.5-flash-8b"
+];
+
+async function generateWithFallback(prompt: string, config?: any, systemInstruction?: string) {
+  let lastError = null;
+
+  for (const modelName of MODELS) {
+    try {
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: prompt,
+        config: {
+          ...config,
+          systemInstruction: systemInstruction,
+        }
+      });
+
+      const text = response.text;
+      if (text) return text;
+    } catch (error) {
+      console.warn(`Model ${modelName} failed, trying next...`, error);
+      lastError = error;
+      continue;
+    }
+  }
+
+  throw lastError || new Error("All models failed to generate content");
 }
 
 export const rewriteExperience = async (description: string, role: string) => {
   const prompt = `
-    You are an expert resume writer. Rewrite the following job description using the Google XYZ formula:
+    You are an expert resume writer. Rewrite the following job description using the Google XYZ formula: 
     "Accomplished [X] as measured by [Y], by doing [Z]".
     Focus on quantifying impact and using strong action verbs.
-
+    
     Role: ${role}
     Current Description: ${description}
-
+    
     Provide 3-5 high-impact bullet points.
   `;
 
   try {
-    return await generate(
-      prompt,
-      {},
+    return await generateWithFallback(
+      prompt, 
+      {}, 
       "You are a professional resume optimizer specializing in ATS-friendly content."
     );
   } catch (error) {
-    console.error("AI Error:", error);
+    console.error("Gemini Error:", error);
     return description;
   }
 };
@@ -47,14 +65,14 @@ export const generateSummary = async (experience: string, skills: string) => {
     Generate a professional summary for a resume based on the following:
     Experience: ${experience}
     Skills: ${skills}
-
+    
     Keep it concise (3-4 sentences), impactful, and ATS-optimized.
   `;
 
   try {
-    return await generate(prompt);
+    return await generateWithFallback(prompt);
   } catch (error) {
-    console.error("AI Error:", error);
+    console.error("Gemini Error:", error);
     return "";
   }
 };
@@ -63,29 +81,29 @@ export const scoreResume = async (resumeText: string) => {
   const prompt = `
     Score this resume for ATS compatibility on a scale of 0-100.
     Provide the score and 3 key areas for improvement.
-
+    
     Resume Content:
     ${resumeText}
   `;
 
   try {
-    const text = await generate(prompt, {
+    const text = await generateWithFallback(prompt, {
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
         properties: {
           score: { type: Type.NUMBER },
-          improvements: {
+          improvements: { 
             type: Type.ARRAY,
-            items: { type: Type.STRING },
-          },
+            items: { type: Type.STRING }
+          }
         },
-        required: ["score", "improvements"],
-      },
+        required: ["score", "improvements"]
+      }
     });
     return JSON.parse(text || "{}");
   } catch (error) {
-    console.error("AI Error:", error);
+    console.error("Gemini Error:", error);
     return { score: 0, improvements: [] };
   }
 };
@@ -102,18 +120,84 @@ export const parseProfileData = async (rawText: string) => {
       "skills": [{ "category": "", "items": [] }],
       "projects": [{ "name": "", "description": "", "link": "" }]
     }
-
+    
     Raw Text:
     ${rawText}
   `;
 
   try {
-    const text = await generate(prompt, {
+    const text = await generateWithFallback(prompt, {
       responseMimeType: "application/json",
+      responseSchema: {
+        type: Type.OBJECT,
+        properties: {
+          personalInfo: {
+            type: Type.OBJECT,
+            properties: {
+              fullName: { type: Type.STRING },
+              email: { type: Type.STRING },
+              phone: { type: Type.STRING },
+              location: { type: Type.STRING },
+              linkedin: { type: Type.STRING },
+              github: { type: Type.STRING }
+            }
+          },
+          summary: { type: Type.STRING },
+          experience: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                company: { type: Type.STRING },
+                role: { type: Type.STRING },
+                location: { type: Type.STRING },
+                startDate: { type: Type.STRING },
+                endDate: { type: Type.STRING },
+                description: { type: Type.STRING }
+              }
+            }
+          },
+          education: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                school: { type: Type.STRING },
+                degree: { type: Type.STRING },
+                field: { type: Type.STRING },
+                location: { type: Type.STRING },
+                startDate: { type: Type.STRING },
+                endDate: { type: Type.STRING }
+              }
+            }
+          },
+          skills: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                category: { type: Type.STRING },
+                items: { type: Type.ARRAY, items: { type: Type.STRING } }
+              }
+            }
+          },
+          projects: {
+            type: Type.ARRAY,
+            items: {
+              type: Type.OBJECT,
+              properties: {
+                name: { type: Type.STRING },
+                description: { type: Type.STRING },
+                link: { type: Type.STRING }
+              }
+            }
+          }
+        }
+      }
     });
     return JSON.parse(text || "{}");
   } catch (error) {
-    console.error("AI Error:", error);
+    console.error("Gemini Error:", error);
     return null;
   }
 };
