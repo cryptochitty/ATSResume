@@ -1,24 +1,21 @@
 /// <reference types="vite/client" />
-import { httpsCallable } from 'firebase/functions';
 import { Type } from "@google/genai";
-import { functions } from '@/lib/firebase';
 
-interface GenerateResponse {
-  text: string;
-}
-
-const generateAI = httpsCallable<
-  { prompt: string; config?: unknown; systemInstruction?: string },
-  GenerateResponse
->(functions, 'generateAI');
+const WORKER_URL = import.meta.env.VITE_WORKER_URL || "https://resumeai-worker.workers.dev";
 
 async function generate(
   prompt: string,
   config?: unknown,
   systemInstruction?: string
 ): Promise<string> {
-  const result = await generateAI({ prompt, config, systemInstruction });
-  return result.data.text;
+  const resp = await fetch(`${WORKER_URL}`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, config, systemInstruction }),
+  });
+  if (!resp.ok) throw new Error(`Worker error: ${resp.status}`);
+  const data = await resp.json() as { text: string };
+  return data.text;
 }
 
 export const rewriteExperience = async (description: string, role: string) => {

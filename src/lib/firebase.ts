@@ -21,19 +21,12 @@ import {
   orderBy,
   Timestamp
 } from 'firebase/firestore';
-import { getFunctions, connectFunctionsEmulator } from 'firebase/functions';
 import firebaseConfig from '@/../firebase-applet-config.json';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
-
-// Functions — connect to emulator in local dev
-export const functions = getFunctions(app, 'us-central1');
-if (import.meta.env.DEV) {
-  connectFunctionsEmulator(functions, 'localhost', 5001);
-}
 export const googleProvider = new GoogleAuthProvider();
 
 /**
