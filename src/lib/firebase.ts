@@ -2,8 +2,7 @@ import { initializeApp } from 'firebase/app';
 import {
   getAuth,
   GoogleAuthProvider,
-  signInWithRedirect,
-  getRedirectResult,
+  signInWithCredential,
   signOut,
   User
 } from 'firebase/auth';
@@ -21,35 +20,45 @@ import {
   orderBy,
   Timestamp
 } from 'firebase/firestore';
+import { GoogleAuth } from '@codetrix-studio/capacitor-google-auth';
 import firebaseConfig from '@/../firebase-applet-config.json';
 
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const db = getFirestore(app, firebaseConfig.firestoreDatabaseId);
 export const auth = getAuth(app);
-export const googleProvider = new GoogleAuthProvider();
+
+// Initialize Google Auth plugin
+GoogleAuth.initialize({
+  clientId: import.meta.env.VITE_GOOGLE_CLIENT_ID,
+  scopes: ['profile', 'email'],
+  grantOfflineAccess: true,
+});
 
 /**
- * AUTHENTICATION LOGIC
- * Changed to Redirect for Capacitor/Mobile compatibility
+ * Google Sign-in via Capacitor plugin — works on Android, iOS and web
  */
-export const signInWithGoogle = () => signInWithRedirect(auth, googleProvider);
-
-export const logout = () => signOut(auth);
-
-/**
- * Helper to catch the user after the redirect return
- * Call this in your App.tsx useEffect
- */
-export const getAuthResult = async (): Promise<User | null> => {
+export const signInWithGoogle = async (): Promise<User | null> => {
   try {
-    const result = await getRedirectResult(auth);
-    return result ? result.user : null;
+    const googleUser = await GoogleAuth.signIn();
+    const credential = GoogleAuthProvider.credential(
+      googleUser.authentication.idToken
+    );
+    const result = await signInWithCredential(auth, credential);
+    return result.user;
   } catch (error) {
-    console.error("Auth Redirect Error:", error);
+    console.error('Google Sign-in Error:', error);
     return null;
   }
 };
+
+export const logout = async () => {
+  await GoogleAuth.signOut();
+  return signOut(auth);
+};
+
+// Keep for backward compatibility — no longer needed with plugin approach
+export const getAuthResult = async (): Promise<User | null> => null;
 
 // --- TYPES & INTERFACES ---
 

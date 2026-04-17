@@ -5,10 +5,16 @@ const config: CapacitorConfig = {
   appName: 'ResumeAI',
   webDir: 'dist',
   server: {
-    // Change https to http for better localhost compatibility in debug
     androidScheme: 'http',
-    hostname: 'localhost' 
-  }
+    hostname: 'localhost',
+  },
+  plugins: {
+    GoogleAuth: {
+      scopes: ['profile', 'email'],
+      serverClientId: process.env.VITE_GOOGLE_CLIENT_ID || '',
+      forceCodeForRefreshToken: true,
+    },
+  },
 };
 
 export default config;

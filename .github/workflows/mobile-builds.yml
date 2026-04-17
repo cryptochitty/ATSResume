@@ -67,22 +67,19 @@ jobs:
       - name: Build Web App
         run: npm run build
 
-      - name: Install CocoaPods
-        run: sudo gem install cocoapods
-
       - name: Sync Capacitor iOS
         run: npx cap sync ios
 
-      - name: Install Pods
+      - name: Resolve Swift Packages
         run: |
-          cd ios/App
-          pod install
+          xcodebuild -resolvePackageDependencies \
+            -project ios/App/App.xcodeproj \
+            -scheme App
 
       - name: Build iOS App (Simulator)
         run: |
-          cd ios/App
           xcodebuild build \
-            -workspace App.xcworkspace \
+            -project ios/App/App.xcodeproj \
             -scheme App \
             -destination 'generic/platform=iOS Simulator' \
             CODE_SIGNING_ALLOWED=NO

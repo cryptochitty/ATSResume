@@ -1,7 +1,6 @@
 // Build version: 1.0.2 - Updated for Redirect Auth
 import React, { useState, useEffect } from 'react';
-// 1. Added getAuthResult to imports
-import { auth, signInWithGoogle, logout, db, ResumeData, OperationType, handleFirestoreError, getAuthResult } from './lib/firebase';
+import { auth, signInWithGoogle, logout, db, ResumeData, OperationType, handleFirestoreError } from './lib/firebase';
 import { onAuthStateChanged, User } from 'firebase/auth';
 import { collection, query, where, onSnapshot, doc, setDoc, updateDoc, Timestamp } from 'firebase/firestore';
 import { Button } from '@/components/ui/button';
@@ -25,23 +24,7 @@ export default function App() {
   const [showPayModal, setShowPayModal] = useState(false);
   const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
-  // 2. Updated Auth listener to handle Redirect results
   useEffect(() => {
-    // First, check if we just returned from a Google Sign-in redirect
-    const checkRedirect = async () => {
-      try {
-        const redirectedUser = await getAuthResult();
-        if (redirectedUser) {
-          setUser(redirectedUser);
-          toast.success(`Welcome back, ${redirectedUser.displayName}!`);
-        }
-      } catch (error) {
-        console.error("Auth result check failed", error);
-      }
-    };
-
-    checkRedirect();
-
     const unsubscribe = onAuthStateChanged(auth, (u) => {
       setUser(u);
       setIsAuthReady(true);
