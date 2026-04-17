@@ -7,6 +7,9 @@ coverage/
 .env*
 !.env.example
 
-# Mobile
-android/
-ios/
+# Mobile build outputs only (native project folders are committed)
+android/app/build/
+android/.gradle/
+android/local.properties
+ios/App/Pods/
+ios/App/App.xcworkspace/xcuserdata/

@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">ResumeAI</string>
+    <string name="title_activity_main">ResumeAI</string>
+    <string name="package_name">com.resumeai.app</string>
+    <string name="custom_url_scheme">com.resumeai.app</string>
+</resources>

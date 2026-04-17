@@ -1,57 +1,37 @@
-import { GoogleGenAI, Type } from "@google/genai";
+import { Type } from "@google/genai";
 
-const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY || "" });
+const API_URL = import.meta.env.VITE_API_URL || "https://resume-ai.onrender.com";
 
-// List of free models to try in order of preference
-const MODELS = [
-  "gemini-2.0-flash",
-  "gemini-2.0-flash-lite-preview",
-  "gemini-1.5-flash",
-  "gemini-1.5-flash-8b"
-];
-
-async function generateWithFallback(prompt: string, config?: any, systemInstruction?: string) {
-  let lastError = null;
-
-  for (const modelName of MODELS) {
-    try {
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: prompt,
-        config: {
-          ...config,
-          systemInstruction: systemInstruction,
-        }
-      });
-
-      const text = response.text;
-      if (text) return text;
-    } catch (error) {
-      console.warn(`Model ${modelName} failed, trying next...`, error);
-      lastError = error;
-      continue;
-    }
+async function generateWithFallback(prompt: string, config?: any, systemInstruction?: string): Promise<string> {
+  const response = await fetch(`${API_URL}/api/gemini/generate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt, config, systemInstruction }),
+  });
+  if (!response.ok) {
+    throw new Error(`Gemini proxy error: ${response.status}`);
   }
-
-  throw lastError || new Error("All models failed to generate content");
+  const data = await response.json();
+  if (!data.text) throw new Error("Empty response from Gemini proxy");
+  return data.text;
 }
 
 export const rewriteExperience = async (description: string, role: string) => {
   const prompt = `
-    You are an expert resume writer. Rewrite the following job description using the Google XYZ formula: 
+    You are an expert resume writer. Rewrite the following job description using the Google XYZ formula:
     "Accomplished [X] as measured by [Y], by doing [Z]".
     Focus on quantifying impact and using strong action verbs.
-    
+
     Role: ${role}
     Current Description: ${description}
-    
+
     Provide 3-5 high-impact bullet points.
   `;
 
   try {
     return await generateWithFallback(
-      prompt, 
-      {}, 
+      prompt,
+      {},
       "You are a professional resume optimizer specializing in ATS-friendly content."
     );
   } catch (error) {
@@ -65,7 +45,7 @@ export const generateSummary = async (experience: string, skills: string) => {
     Generate a professional summary for a resume based on the following:
     Experience: ${experience}
     Skills: ${skills}
-    
+
     Keep it concise (3-4 sentences), impactful, and ATS-optimized.
   `;
 
@@ -81,7 +61,7 @@ export const scoreResume = async (resumeText: string) => {
   const prompt = `
     Score this resume for ATS compatibility on a scale of 0-100.
     Provide the score and 3 key areas for improvement.
-    
+
     Resume Content:
     ${resumeText}
   `;
@@ -93,13 +73,13 @@ export const scoreResume = async (resumeText: string) => {
         type: Type.OBJECT,
         properties: {
           score: { type: Type.NUMBER },
-          improvements: { 
+          improvements: {
             type: Type.ARRAY,
-            items: { type: Type.STRING }
-          }
+            items: { type: Type.STRING },
+          },
         },
-        required: ["score", "improvements"]
-      }
+        required: ["score", "improvements"],
+      },
     });
     return JSON.parse(text || "{}");
   } catch (error) {
@@ -120,7 +100,7 @@ export const parseProfileData = async (rawText: string) => {
       "skills": [{ "category": "", "items": [] }],
       "projects": [{ "name": "", "description": "", "link": "" }]
     }
-    
+
     Raw Text:
     ${rawText}
   `;
@@ -139,8 +119,8 @@ export const parseProfileData = async (rawText: string) => {
               phone: { type: Type.STRING },
               location: { type: Type.STRING },
               linkedin: { type: Type.STRING },
-              github: { type: Type.STRING }
-            }
+              github: { type: Type.STRING },
+            },
           },
           summary: { type: Type.STRING },
           experience: {
@@ -153,9 +133,9 @@ export const parseProfileData = async (rawText: string) => {
                 location: { type: Type.STRING },
                 startDate: { type: Type.STRING },
                 endDate: { type: Type.STRING },
-                description: { type: Type.STRING }
-              }
-            }
+                description: { type: Type.STRING },
+              },
+            },
           },
           education: {
             type: Type.ARRAY,
@@ -167,9 +147,9 @@ export const parseProfileData = async (rawText: string) => {
                 field: { type: Type.STRING },
                 location: { type: Type.STRING },
                 startDate: { type: Type.STRING },
-                endDate: { type: Type.STRING }
-              }
-            }
+                endDate: { type: Type.STRING },
+              },
+            },
           },
           skills: {
             type: Type.ARRAY,
@@ -177,9 +157,9 @@ export const parseProfileData = async (rawText: string) => {
               type: Type.OBJECT,
               properties: {
                 category: { type: Type.STRING },
-                items: { type: Type.ARRAY, items: { type: Type.STRING } }
-              }
-            }
+                items: { type: Type.ARRAY, items: { type: Type.STRING } },
+              },
+            },
           },
           projects: {
             type: Type.ARRAY,
@@ -188,12 +168,12 @@ export const parseProfileData = async (rawText: string) => {
               properties: {
                 name: { type: Type.STRING },
                 description: { type: Type.STRING },
-                link: { type: Type.STRING }
-              }
-            }
-          }
-        }
-      }
+                link: { type: Type.STRING },
+              },
+            },
+          },
+        },
+      },
     });
     return JSON.parse(text || "{}");
   } catch (error) {
