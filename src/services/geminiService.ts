@@ -1,7 +1,7 @@
 /// <reference types="vite/client" />
 import { Type } from "@google/genai";
 
-const WORKER_URL = import.meta.env.VITE_WORKER_URL || "https://resumeai-worker.workers.dev";
+const WORKER_URL = import.meta.env.VITE_WORKER_URL || "https://resumeai-worker.resumeai.workers.dev";
 
 async function generate(
   prompt: string,
