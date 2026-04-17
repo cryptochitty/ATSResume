@@ -1,20 +1,24 @@
 /// <reference types="vite/client" />
+import { httpsCallable } from 'firebase/functions';
 import { Type } from "@google/genai";
+import { functions } from '@/lib/firebase';
 
-const API_URL = import.meta.env.VITE_API_URL || "https://resume-ai.onrender.com";
+interface GenerateResponse {
+  text: string;
+}
 
-async function generateWithFallback(prompt: string, config?: any, systemInstruction?: string): Promise<string> {
-  const response = await fetch(`${API_URL}/api/gemini/generate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt, config, systemInstruction }),
-  });
-  if (!response.ok) {
-    throw new Error(`Gemini proxy error: ${response.status}`);
-  }
-  const data = await response.json();
-  if (!data.text) throw new Error("Empty response from Gemini proxy");
-  return data.text;
+const generateAI = httpsCallable<
+  { prompt: string; config?: unknown; systemInstruction?: string },
+  GenerateResponse
+>(functions, 'generateAI');
+
+async function generate(
+  prompt: string,
+  config?: unknown,
+  systemInstruction?: string
+): Promise<string> {
+  const result = await generateAI({ prompt, config, systemInstruction });
+  return result.data.text;
 }
 
 export const rewriteExperience = async (description: string, role: string) => {
@@ -30,13 +34,13 @@ export const rewriteExperience = async (description: string, role: string) => {
   `;
 
   try {
-    return await generateWithFallback(
+    return await generate(
       prompt,
       {},
       "You are a professional resume optimizer specializing in ATS-friendly content."
     );
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("AI Error:", error);
     return description;
   }
 };
@@ -51,9 +55,9 @@ export const generateSummary = async (experience: string, skills: string) => {
   `;
 
   try {
-    return await generateWithFallback(prompt);
+    return await generate(prompt);
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("AI Error:", error);
     return "";
   }
 };
@@ -68,7 +72,7 @@ export const scoreResume = async (resumeText: string) => {
   `;
 
   try {
-    const text = await generateWithFallback(prompt, {
+    const text = await generate(prompt, {
       responseMimeType: "application/json",
       responseSchema: {
         type: Type.OBJECT,
@@ -84,7 +88,7 @@ export const scoreResume = async (resumeText: string) => {
     });
     return JSON.parse(text || "{}");
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("AI Error:", error);
     return { score: 0, improvements: [] };
   }
 };
@@ -107,78 +111,12 @@ export const parseProfileData = async (rawText: string) => {
   `;
 
   try {
-    const text = await generateWithFallback(prompt, {
+    const text = await generate(prompt, {
       responseMimeType: "application/json",
-      responseSchema: {
-        type: Type.OBJECT,
-        properties: {
-          personalInfo: {
-            type: Type.OBJECT,
-            properties: {
-              fullName: { type: Type.STRING },
-              email: { type: Type.STRING },
-              phone: { type: Type.STRING },
-              location: { type: Type.STRING },
-              linkedin: { type: Type.STRING },
-              github: { type: Type.STRING },
-            },
-          },
-          summary: { type: Type.STRING },
-          experience: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                company: { type: Type.STRING },
-                role: { type: Type.STRING },
-                location: { type: Type.STRING },
-                startDate: { type: Type.STRING },
-                endDate: { type: Type.STRING },
-                description: { type: Type.STRING },
-              },
-            },
-          },
-          education: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                school: { type: Type.STRING },
-                degree: { type: Type.STRING },
-                field: { type: Type.STRING },
-                location: { type: Type.STRING },
-                startDate: { type: Type.STRING },
-                endDate: { type: Type.STRING },
-              },
-            },
-          },
-          skills: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                category: { type: Type.STRING },
-                items: { type: Type.ARRAY, items: { type: Type.STRING } },
-              },
-            },
-          },
-          projects: {
-            type: Type.ARRAY,
-            items: {
-              type: Type.OBJECT,
-              properties: {
-                name: { type: Type.STRING },
-                description: { type: Type.STRING },
-                link: { type: Type.STRING },
-              },
-            },
-          },
-        },
-      },
     });
     return JSON.parse(text || "{}");
   } catch (error) {
-    console.error("Gemini Error:", error);
+    console.error("AI Error:", error);
     return null;
   }
 };
