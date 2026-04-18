@@ -15,11 +15,11 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '18'  # 🔥 FIX #1: Node 22 breaks Capacitor CLI
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci  # 🔥 FIX #2: Use npm ci (not npm install) for CI
 
       - name: Build Web App
         run: npm run build
@@ -32,24 +32,28 @@ jobs:
           java-version: '21'
           distribution: 'zulu'
 
-      - name: Sync Capacitor Android
+      - name: Create/Sync Capacitor Android
         run: |
+          # 🔥 FIX #3: Explicit CLI version + error handling
           if [ ! -d "android" ]; then
-            npx cap add android
+            npx @capacitor/cli@latest add android || { echo "❌ Capacitor add failed"; exit 1; }
           fi
-          npx cap sync android
+          npx @capacitor/cli@latest sync android || { echo "❌ Capacitor sync failed"; exit 1; }
 
       - name: Build Android APK
         run: |
           cd android
           chmod +x gradlew
-          ./gradlew assembleDebug
+          # 🔥 FIX #4: Add clean + stacktrace for debugging
+          ./gradlew clean assembleDebug --stacktrace
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
+        if: success()
         with:
           name: app-debug.apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+          retention-days: 7
 
   build-ios:
     runs-on: macos-latest
@@ -59,25 +63,39 @@ jobs:
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
+          node-version: '18'  # 🔥 FIX #1: Node 22 breaks Capacitor CLI
           cache: 'npm'
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci  # 🔥 FIX #2: Use npm ci (not npm install) for CI
 
       - name: Build Web App
         run: npm run build
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
 
-      - name: Sync Capacitor iOS
+      - name: Create/Sync Capacitor iOS
         run: |
+          # 🔥 FIX #3: Explicit CLI version + error handling
           if [ ! -d "ios" ]; then
-            npx cap add ios
+            npx @capacitor/cli@latest add ios || { echo "❌ Capacitor add failed"; exit 1; }
           fi
-          npx cap sync ios
+          npx @capacitor/cli@latest sync ios || { echo "❌ Capacitor sync failed"; exit 1; }
+
+      - name: Install CocoaPods dependencies
+        run: |
+          # 🔥 FIX #5: Missing pod install - KEY BLOCKER!
+          cd ios/App
+          pod install --repo-update
 
       - name: Build iOS App
         run: |
           cd ios/App
-          xcodebuild build -scheme App -destination 'generic/platform=iOS Simulator' CODE_SIGNING_ALLOWED=NO
+          xcodebuild build \
+            -scheme App \
+            -destination 'generic/platform=iOS Simulator' \
+            -configuration Debug \
+            CODE_SIGNING_ALLOWED=NO \
+            -allowProvisioningUpdates \
+            -verbose
+
